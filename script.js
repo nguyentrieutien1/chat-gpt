@@ -1,26 +1,23 @@
-import { config } from "dotenv"
-config()
+const express = require('express');
+const app = express();
+const {GoogleGenerativeAI} = require("@google/generative-ai")
+const genAI = new GoogleGenerativeAI(process.env.OPEN_AI_API_KEY);
 
-import { Configuration, OpenAIApi } from "openai"
-import readline from "readline"
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }));
+app.post('/api-conversion', async(req, res) => {
 
-const openAi = new OpenAIApi(
-  new Configuration({
-    apiKey: process.env.OPEN_AI_API_KEY,
-  })
-)
+  console.log(req.body);
+  const { data } = req.body
+  if(!data) {
+    return res.status(302).json({status: 302, message: 'Empty body !'})
+  }
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const result = await model.generateContent(data);
+  return res.status(201).json({statusCode: 201, metadata: result.response.text()})
 
-const userInterface = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
 })
 
-userInterface.prompt()
-userInterface.on("line", async input => {
-  const response = await openAi.createChatCompletion({
-    model: "gpt-3.5-turbo",
-    messages: [{ role: "user", content: input }],
-  })
-  console.log(response.data.choices[0].message.content)
-  userInterface.prompt()
+app.listen(5000, () => {
+  console.log("App is running...");
 })
